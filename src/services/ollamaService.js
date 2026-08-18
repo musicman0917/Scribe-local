@@ -54,20 +54,27 @@ function extractJson(text) {
 }
 
 /**
- * Ask the vision model for a tight bounding box around the UI element at
- * (x, y) in the given image. Coordinates in the prompt/response are
- * relative (0-1) so they're resolution independent.
+ * Ask the vision model to tighten a bounding box around the UI element
+ * near the center of an already-cropped sub-image.
+ *
+ * Deliberately does NOT ask the model to locate the click itself — general
+ * vision-language models aren't trained for spatial "grounding" (pointing
+ * to a specific screen location from a text prompt) and are unreliable at
+ * it, especially on a full, busy desktop screenshot. Instead, the caller
+ * crops a generous, *deterministic* region centered on the real (known)
+ * click coordinate first, and this only asks the model to find the
+ * specific element near the middle of that much smaller image — a far
+ * easier, more reliable task. Coordinates in the response are relative
+ * (0-1) to the sub-image, not the original screenshot.
  */
-async function smartCrop({ imageBase64, x, y, width, height, model }) {
+async function smartCrop({ imageBase64, width, height, model }) {
   const { ollama } = getSettings();
-  const relX = (x / width).toFixed(4);
-  const relY = (y / height).toFixed(4);
 
-  const prompt = `You are looking at a screenshot that is ${width}x${height} pixels. A user clicked at the normalized coordinate (${relX}, ${relY}) — that's x=${relX}*width, y=${relY}*height, origin top-left.
-Identify the single UI element (button, menu item, field, icon, panel) under or nearest to that point.
+  const prompt = `You are looking at a small, zoomed-in crop taken from a screenshot, ${width}x${height} pixels. It was cropped so the user's mouse click is at approximately the center of this image.
+Identify the single UI element (button, menu item, field, icon, panel) at or nearest to the center of this image — not elsewhere in the image.
 Respond with ONLY a JSON object, no prose, no markdown, in exactly this shape:
 {"x0": <float 0-1>, "y0": <float 0-1>, "x1": <float 0-1>, "y1": <float 0-1>}
-where (x0,y0) is the top-left and (x1,y1) is the bottom-right of a tight bounding box around that UI element, with a little padding. All four values must be between 0 and 1.`;
+where (x0,y0) is the top-left and (x1,y1) is the bottom-right of a tight bounding box around that element, relative to THIS image, with a little padding. All four values must be between 0 and 1.`;
 
   const api = client();
   let res;

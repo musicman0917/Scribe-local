@@ -1,5 +1,6 @@
 const express = require('express');
 const path = require('path');
+const fs = require('fs');
 const store = require('../services/store');
 const imageService = require('../services/imageService');
 const ollamaService = require('../services/ollamaService');
@@ -14,44 +15,86 @@ async function loadStep(tutorialId, stepId) {
   return { tutorial, step };
 }
 
+// Size (px) of the deterministic, click-centered region cropped BEFORE
+// asking the model to tighten further. Keeps the model's job to "find the
+// element near the middle of this small image" rather than "find the
+// click location anywhere in the full screenshot" — general vision models
+// aren't reliable at the latter (they're not trained for spatial
+// grounding), so letting them guess it directly can crop a totally
+// unrelated part of the screen. This way, even a bad model response can
+// only affect fine-tightening, never where the crop actually lands.
+const COARSE_CROP_SIZE = 640;
+
 /**
- * Crop a step's annotated screenshot tightly around its click point —
- * via Ollama's smart-crop when possible, falling back to a fixed-size
- * box around the click if the model is unavailable or returns junk.
- * Vision models like llava internally downscale whatever image they're
- * given to a small fixed resolution (roughly 336x336px) before "looking"
- * at it, so a small click-circle on a full, uncropped screenshot is
- * often too tiny to survive that downscale — cropping first keeps the
- * highlighted element a large fraction of the frame.
+ * Crop a step's annotated screenshot tightly around its click point.
+ *
+ * Two stages:
+ *  1. Deterministically crop a generous, click-centered region — no model
+ *     involved, so this can never land on the wrong part of the screen.
+ *  2. Ask Ollama to tighten that region further around the specific UI
+ *     element near its center. If the model is unavailable or returns
+ *     something unusable, the stage-1 crop is used as-is.
+ *
+ * This also sidesteps a separate issue: vision models like llava
+ * internally downscale whatever image they're given to a small fixed
+ * resolution (roughly 336x336px) before "looking" at it, so a small
+ * click-circle on a full, uncropped screenshot is often too tiny to
+ * survive that downscale — the stage-1 crop keeps the highlighted element
+ * a large fraction of the frame regardless of how stage 2 goes.
  */
 async function performCrop(tutorialId, step) {
-  const imageBase64 = await imageService.toBase64Raw(step.annotatedImage);
-  let box;
+  const coarseBox = imageService.fallbackBoxAroundPoint(step.x, step.y, COARSE_CROP_SIZE);
+  const coarseFilename = path.basename(step.annotatedImage).replace('annotated-', 'coarse-');
+  const coarsePath = path.join(store.imagesDir(tutorialId), coarseFilename);
+
+  const coarseRegion = await imageService.cropToRegion({
+    inputPath: step.annotatedImage,
+    outputPath: coarsePath,
+    box: coarseBox,
+    relative: false,
+    padding: 0
+  });
+
+  let box = null;
   let usedFallback = false;
 
   try {
-    box = await ollamaService.smartCrop({
-      imageBase64,
-      x: step.x,
-      y: step.y,
-      width: step.screenWidth,
-      height: step.screenHeight
+    const coarseBase64 = await imageService.toBase64Raw(coarsePath);
+    const relativeBox = await ollamaService.smartCrop({
+      imageBase64: coarseBase64,
+      width: coarseRegion.width,
+      height: coarseRegion.height
     });
+    // Map the model's box (relative to the coarse sub-image) back to
+    // absolute pixel coordinates in the original screenshot.
+    box = {
+      x0: coarseRegion.left + relativeBox.x0 * coarseRegion.width,
+      y0: coarseRegion.top + relativeBox.y0 * coarseRegion.height,
+      x1: coarseRegion.left + relativeBox.x1 * coarseRegion.width,
+      y1: coarseRegion.top + relativeBox.y1 * coarseRegion.height
+    };
   } catch (err) {
     usedFallback = true;
-    const fb = imageService.fallbackBoxAroundPoint(step.x, step.y);
-    box = { x0: fb.x0, y0: fb.y0, x1: fb.x1, y1: fb.y1 };
   }
 
   const croppedFilename = path.basename(step.annotatedImage).replace('annotated-', 'cropped-');
   const croppedPath = path.join(store.imagesDir(tutorialId), croppedFilename);
 
-  await imageService.cropToRegion({
-    inputPath: step.annotatedImage,
-    outputPath: croppedPath,
-    box,
-    relative: !usedFallback
-  });
+  if (usedFallback) {
+    // Stage 2 failed — the stage-1 coarse crop is already centered on the
+    // real click, so just use it directly rather than risk a bad box.
+    await fs.promises.copyFile(coarsePath, croppedPath);
+  } else {
+    await imageService.cropToRegion({
+      inputPath: step.annotatedImage,
+      outputPath: croppedPath,
+      box,
+      relative: false,
+      padding: 16
+    });
+  }
+
+  await fs.promises.unlink(coarsePath).catch(() => {});
 
   const updated = await store.updateStep(tutorialId, step.id, { croppedImage: croppedPath });
   return { updated, croppedFilename, usedFallback };

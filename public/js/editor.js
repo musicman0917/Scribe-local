@@ -359,7 +359,18 @@
 
   // ---------- init ----------
   async function init() {
-    tutorial = await Api.getTutorial(tutorialId);
+    try {
+      tutorial = await Api.getTutorial(tutorialId);
+    } catch (err) {
+      document.querySelector('main').innerHTML = `
+        <div class="card p-10 text-center max-w-lg mx-auto">
+          <p class="text-red-600 font-medium mb-2">Couldn't load this tutorial</p>
+          <p class="text-sm text-gray-500 mb-4">${escapeHtml(err.message)}</p>
+          <a href="/" class="btn-primary">Back to Dashboard</a>
+        </div>`;
+      return;
+    }
+
     els.title.value = tutorial.title;
     els.description.value = tutorial.description || '';
     els.stepCount.textContent = `${tutorial.steps.length} step${tutorial.steps.length === 1 ? '' : 's'}`;

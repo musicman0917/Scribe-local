@@ -1,0 +1,8 @@
+node_modules/
+data/tutorials/*
+!data/tutorials/.gitkeep
+config/settings.json
+*.log
+.DS_Store
+.env
+exports/

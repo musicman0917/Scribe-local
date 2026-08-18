@@ -1,0 +1,14 @@
+{
+  "ollama": {
+    "host": "http://localhost:11434",
+    "visionModel": "llava",
+    "enabled": true,
+    "timeoutMs": 60000
+  },
+  "capture": {
+    "highlightColor": "rgba(255, 214, 0, 0.35)",
+    "highlightStroke": "rgba(255, 179, 0, 0.9)",
+    "badgeColor": "#111827",
+    "badgeTextColor": "#ffffff"
+  }
+}

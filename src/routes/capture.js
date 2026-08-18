@@ -1,0 +1,113 @@
+const express = require('express');
+const path = require('path');
+const captureService = require('../services/captureService');
+const imageService = require('../services/imageService');
+const store = require('../services/store');
+const { getSettings } = require('../config');
+
+module.exports = function createCaptureRouter(io) {
+  const router = express.Router();
+
+  async function finalizeStep(tutorialId, { x, y, filename, filePath, order }) {
+    const { width, height } = await imageService.annotateClick({
+      inputPath: filePath,
+      outputPath: filePath.replace('raw-', 'annotated-'),
+      x,
+      y,
+      order,
+      style: getSettings().capture
+    });
+
+    const annotatedFilename = path.basename(filePath.replace('raw-', 'annotated-'));
+
+    const step = await store.addStep(tutorialId, {
+      title: `Step ${order}`,
+      x,
+      y,
+      screenWidth: width,
+      screenHeight: height,
+      rawImage: filePath,
+      annotatedImage: filePath.replace('raw-', 'annotated-')
+    });
+
+    const payload = {
+      ...step,
+      rawImageUrl: `/api/tutorials/${tutorialId}/images/${filename}`,
+      annotatedImageUrl: `/api/tutorials/${tutorialId}/images/${annotatedFilename}`
+    };
+
+    io.to(`tutorial:${tutorialId}`).emit('step-captured', payload);
+    return payload;
+  }
+
+  router.get('/status', (req, res) => {
+    res.json({
+      hookAvailable: captureService.isHookAvailable(),
+      hookLoadError: captureService.hookLoadError()
+    });
+  });
+
+  router.post('/:tutorialId/start', async (req, res) => {
+    const tutorial = await store.getTutorial(req.params.tutorialId);
+    if (!tutorial) return res.status(404).json({ error: 'Tutorial not found' });
+
+    const imagesDir = store.imagesDir(req.params.tutorialId);
+    const session = captureService.startSession(req.params.tutorialId, imagesDir);
+
+    session.on('step-captured', (event) => {
+      finalizeStep(req.params.tutorialId, event).catch((err) => {
+        io.to(`tutorial:${req.params.tutorialId}`).emit('capture-error', { message: err.message });
+      });
+    });
+    session.on('warning', (message) => {
+      io.to(`tutorial:${req.params.tutorialId}`).emit('capture-warning', { message });
+    });
+    session.on('error', (err) => {
+      io.to(`tutorial:${req.params.tutorialId}`).emit('capture-error', { message: err.message });
+    });
+
+    res.json({
+      started: true,
+      hookAvailable: captureService.isHookAvailable(),
+      hookLoadError: captureService.hookLoadError()
+    });
+  });
+
+  router.post('/:tutorialId/stop', (req, res) => {
+    captureService.stopSession(req.params.tutorialId);
+    res.json({ stopped: true });
+  });
+
+  // Manual capture fallback: take a screenshot right now; the caller
+  // (frontend) will prompt the user to click on it to place the marker,
+  // then call POST /:tutorialId/manual-step with the chosen coordinates.
+  router.post('/:tutorialId/manual-shot', async (req, res) => {
+    try {
+      const imagesDir = store.imagesDir(req.params.tutorialId);
+      const { filename } = await captureService.manualCapture(imagesDir);
+      res.json({ filename, imageUrl: `/api/tutorials/${req.params.tutorialId}/images/${filename}` });
+    } catch (err) {
+      res.status(500).json({ error: `Screenshot failed: ${err.message}` });
+    }
+  });
+
+  router.post('/:tutorialId/manual-step', async (req, res) => {
+    try {
+      const { filename, x, y } = req.body || {};
+      if (!filename || x === undefined || y === undefined) {
+        return res.status(400).json({ error: 'filename, x, and y are required' });
+      }
+      const imagesDir = store.imagesDir(req.params.tutorialId);
+      const filePath = path.join(imagesDir, filename);
+      const tutorial = await store.getTutorial(req.params.tutorialId);
+      const order = tutorial.steps.length + 1;
+
+      const step = await finalizeStep(req.params.tutorialId, { x, y, filename, filePath, order });
+      res.status(201).json(step);
+    } catch (err) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  return router;
+};

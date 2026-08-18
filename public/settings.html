@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Scribe Local · Settings</title>
+  <link rel="stylesheet" href="/css/tailwind.css" />
+  <link rel="icon" href="data:,">
+</head>
+<body class="bg-gray-50 min-h-screen text-gray-900">
+  <header class="border-b border-gray-200 bg-white">
+    <div class="max-w-3xl mx-auto px-6 py-4 flex items-center justify-between">
+      <div class="flex items-center gap-2">
+        <a href="/" class="btn-ghost !px-2" title="Back">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M17 10a.75.75 0 01-.75.75H5.612l4.158 3.96a.75.75 0 11-1.04 1.08l-5.5-5.25a.75.75 0 010-1.08l5.5-5.25a.75.75 0 111.04 1.08L5.612 9.25H16.25A.75.75 0 0117 10z" clip-rule="evenodd"/></svg>
+        </a>
+        <span class="text-lg font-semibold">Settings</span>
+      </div>
+    </div>
+  </header>
+
+  <main class="max-w-3xl mx-auto px-6 py-8 space-y-6">
+    <div class="card p-6">
+      <h2 class="text-lg font-semibold mb-1">Local Ollama Connection</h2>
+      <p class="text-sm text-gray-500 mb-4">
+        Scribe Local uses a locally running <a class="underline" href="https://ollama.com" target="_blank" rel="noopener">Ollama</a> instance
+        with a vision-capable model (e.g. <code class="bg-gray-100 px-1 rounded">llava</code> or <code class="bg-gray-100 px-1 rounded">llama3.2-vision</code>)
+        for smart cropping and auto-generated step descriptions. No data leaves your machine.
+      </p>
+
+      <div class="space-y-4">
+        <div>
+          <label class="label" for="ollama-host">Ollama Host</label>
+          <input id="ollama-host" class="input" placeholder="http://localhost:11434" />
+        </div>
+        <div>
+          <label class="label" for="ollama-model">Vision Model</label>
+          <input id="ollama-model" class="input" placeholder="llava" />
+          <p class="text-xs text-gray-400 mt-1">Must be a vision-capable model already pulled in Ollama (<code>ollama pull llava</code>).</p>
+        </div>
+        <div class="flex items-center gap-2">
+          <input id="ollama-enabled" type="checkbox" class="h-4 w-4 accent-brand-500" />
+          <label for="ollama-enabled" class="text-sm text-gray-700">Enable Ollama-powered features</label>
+        </div>
+      </div>
+
+      <div class="flex items-center gap-3 mt-6">
+        <button id="test-btn" class="btn-secondary">Test Connection</button>
+        <button id="save-btn" class="btn-primary">Save Settings</button>
+        <span id="status-msg" class="text-sm"></span>
+      </div>
+
+      <div id="models-box" class="hidden mt-4 text-xs text-gray-500 bg-gray-50 border border-gray-200 rounded-lg p-3"></div>
+    </div>
+
+    <div class="card p-6">
+      <h2 class="text-lg font-semibold mb-1">Click Annotation Style</h2>
+      <p class="text-sm text-gray-500 mb-4">Customize the semi-transparent highlight and number badge overlaid on every captured click.</p>
+      <div class="grid grid-cols-2 gap-4">
+        <div>
+          <label class="label" for="highlight-color">Highlight fill (rgba)</label>
+          <input id="highlight-color" class="input" placeholder="rgba(255, 214, 0, 0.35)" />
+        </div>
+        <div>
+          <label class="label" for="highlight-stroke">Highlight stroke (rgba)</label>
+          <input id="highlight-stroke" class="input" placeholder="rgba(255, 179, 0, 0.9)" />
+        </div>
+        <div>
+          <label class="label" for="badge-color">Badge background</label>
+          <input id="badge-color" class="input" placeholder="#111827" />
+        </div>
+        <div>
+          <label class="label" for="badge-text-color">Badge text color</label>
+          <input id="badge-text-color" class="input" placeholder="#ffffff" />
+        </div>
+      </div>
+    </div>
+
+    <div class="rounded-xl border border-amber-300 bg-amber-50 p-5 text-sm text-amber-900">
+      <p class="font-semibold mb-1">⚠ Security &amp; Compliance Notice</p>
+      <p>This tool captures raw screenshots of your desktop and sends cropped images to your local Ollama instance. It is <strong>not</strong> designed, audited, or certified for capturing financial data, Protected Health Information (PHI), or any HIPAA-regulated data. Always review captured screenshots before exporting or sharing, and use the redaction tool to blur or black out any sensitive information such as stream keys, passwords, tokens, or personal data.</p>
+    </div>
+  </main>
+
+  <script src="/js/api.js"></script>
+  <script src="/js/settings.js"></script>
+</body>
+</html>

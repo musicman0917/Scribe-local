@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Scribe Local · Editor</title>
+  <link rel="stylesheet" href="/css/tailwind.css" />
+  <link rel="icon" href="data:,">
+</head>
+<body class="bg-gray-50 min-h-screen text-gray-900">
+  <header class="border-b border-gray-200 bg-white sticky top-0 z-20">
+    <div class="max-w-6xl mx-auto px-6 py-3 flex items-center justify-between gap-4">
+      <div class="flex items-center gap-3 min-w-0">
+        <a href="/" class="btn-ghost !px-2" title="Back to dashboard">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M17 10a.75.75 0 01-.75.75H5.612l4.158 3.96a.75.75 0 11-1.04 1.08l-5.5-5.25a.75.75 0 010-1.08l5.5-5.25a.75.75 0 111.04 1.08L5.612 9.25H16.25A.75.75 0 0117 10z" clip-rule="evenodd"/></svg>
+        </a>
+        <input id="tutorial-title" class="text-lg font-semibold bg-transparent border-none focus:ring-0 focus:outline-none focus:bg-gray-50 rounded px-1 -mx-1 truncate" />
+        <span id="save-indicator" class="text-xs text-gray-400 shrink-0"></span>
+      </div>
+      <div class="flex items-center gap-2 shrink-0">
+        <div class="relative">
+          <button id="export-btn" class="btn-secondary">
+            Export
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.938a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z" clip-rule="evenodd"/></svg>
+          </button>
+          <div id="export-menu" class="hidden absolute right-0 mt-2 w-52 card p-1.5 z-30">
+            <a href="#" data-format="markdown" class="export-item block rounded-lg px-3 py-2 text-sm hover:bg-gray-50">Markdown (.zip + images)</a>
+            <a href="#" data-format="html" class="export-item block rounded-lg px-3 py-2 text-sm hover:bg-gray-50">Printable HTML report</a>
+            <a href="#" data-format="pdf" class="export-item block rounded-lg px-3 py-2 text-sm hover:bg-gray-50">PDF document</a>
+          </div>
+        </div>
+        <a href="/settings.html" class="btn-ghost">Settings</a>
+      </div>
+    </div>
+  </header>
+
+  <main class="max-w-6xl mx-auto px-6 py-6 grid grid-cols-1 lg:grid-cols-[280px_1fr] gap-6">
+    <!-- Capture control panel -->
+    <aside class="space-y-4">
+      <div class="card p-4">
+        <h2 class="text-sm font-semibold text-gray-700 mb-3">Capture</h2>
+        <div id="hook-status" class="text-xs rounded-lg px-3 py-2 mb-3 border"></div>
+        <button id="toggle-capture-btn" class="btn-primary w-full mb-2">
+          <span id="toggle-capture-label">Start Capturing</span>
+        </button>
+        <button id="manual-capture-btn" class="btn-secondary w-full">Capture Step Now (Manual)</button>
+        <p class="text-xs text-gray-400 mt-3 leading-relaxed">
+          Auto mode records every click system-wide and screenshots automatically.
+          Manual mode takes one screenshot immediately — you then click the spot to mark.
+        </p>
+      </div>
+      <div class="card p-4">
+        <h2 class="text-sm font-semibold text-gray-700 mb-2">Tutorial Notes</h2>
+        <textarea id="tutorial-description" rows="5" class="input" placeholder="Description shown at the top of exports..."></textarea>
+      </div>
+    </aside>
+
+    <!-- Steps timeline -->
+    <section>
+      <div class="flex items-center justify-between mb-3">
+        <h2 class="text-sm font-semibold text-gray-700">Steps</h2>
+        <span id="step-count" class="text-xs text-gray-400"></span>
+      </div>
+      <div id="empty-steps" class="hidden card p-10 text-center text-gray-500 text-sm">
+        No steps yet. Start capturing or use manual capture to add your first step.
+      </div>
+      <ol id="steps-list" class="space-y-4"></ol>
+    </section>
+  </main>
+
+  <!-- Manual capture modal -->
+  <dialog id="manual-capture-dialog" class="rounded-xl p-0 max-w-4xl w-full backdrop:bg-gray-900/50">
+    <div class="card p-4 w-full">
+      <div class="flex items-center justify-between mb-3">
+        <h2 class="text-lg font-semibold">Click the exact spot for this step</h2>
+        <button id="manual-capture-close" class="btn-ghost !px-2">✕</button>
+      </div>
+      <div id="manual-capture-imgwrap" class="relative border border-gray-200 rounded-lg overflow-hidden bg-gray-100 cursor-crosshair">
+        <img id="manual-capture-img" class="w-full h-auto select-none" draggable="false" />
+        <div id="manual-capture-marker" class="hidden absolute w-8 h-8 -ml-4 -mt-4 rounded-full border-2 border-amber-500 bg-amber-400/40 pointer-events-none"></div>
+      </div>
+      <div class="flex justify-end gap-2 mt-4">
+        <button id="manual-capture-cancel" class="btn-secondary">Cancel</button>
+        <button id="manual-capture-confirm" class="btn-primary" disabled>Add Step</button>
+      </div>
+    </div>
+  </dialog>
+
+  <!-- Redaction modal -->
+  <dialog id="redact-dialog" class="rounded-xl p-0 max-w-5xl w-full backdrop:bg-gray-900/50">
+    <div class="card p-4 w-full">
+      <div class="flex items-center justify-between mb-3">
+        <h2 class="text-lg font-semibold">Redact confidential info</h2>
+        <button id="redact-close" class="btn-ghost !px-2">✕</button>
+      </div>
+      <div class="flex items-center gap-4 mb-3 text-sm">
+        <label class="flex items-center gap-2 cursor-pointer">
+          <input type="radio" name="redact-mode" value="blackout" checked class="accent-gray-900" />
+          Black-out
+        </label>
+        <label class="flex items-center gap-2 cursor-pointer">
+          <input type="radio" name="redact-mode" value="blur" class="accent-gray-900" />
+          Blur
+        </label>
+        <button id="redact-undo" class="btn-ghost !px-2 !py-1 ml-auto text-xs">Undo last box</button>
+        <button id="redact-clear" class="btn-ghost !px-2 !py-1 text-xs">Clear all</button>
+      </div>
+      <div id="redact-canvas-wrap" class="relative border border-gray-200 rounded-lg overflow-hidden bg-gray-100 cursor-crosshair select-none">
+        <img id="redact-img" class="w-full h-auto select-none pointer-events-none" draggable="false" />
+        <canvas id="redact-canvas" class="absolute inset-0 w-full h-full"></canvas>
+      </div>
+      <p class="text-xs text-gray-400 mt-2">Drag rectangles over stream keys, passwords, tokens, or personal info, then click Apply. This permanently overwrites the step image with the redaction baked in.</p>
+      <div class="flex justify-end gap-2 mt-4">
+        <button id="redact-cancel" class="btn-secondary">Cancel</button>
+        <button id="redact-apply" class="btn-primary">Apply Redaction</button>
+      </div>
+    </div>
+  </dialog>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="/js/api.js"></script>
+  <script src="/js/redact.js"></script>
+  <script src="/js/editor.js"></script>
+</body>
+</html>

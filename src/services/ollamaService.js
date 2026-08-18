@@ -114,9 +114,10 @@ where (x0,y0) is the top-left and (x1,y1) is the bottom-right of a tight boundin
 async function describeStep({ imageBase64, context, model }) {
   const { ollama } = getSettings();
 
-  const prompt = `You are writing a step in a software how-to tutorial, similar to Scribehow. Look at this screenshot, which highlights (with a yellow circle) the exact UI element the user clicked.${context ? ` Additional context: ${context}.` : ''}
+  const prompt = `You are writing a step in a software how-to tutorial, similar to Scribehow. Look CAREFULLY at this screenshot, which highlights (with a yellow circle) the exact UI element the user clicked.${context ? ` Additional context: ${context}.` : ''}
+Base your answer entirely on the specific text, icon, and label you can actually see inside or right next to the yellow circle in THIS image. Do not guess or invent a plausible-sounding button name — name the real one shown.
 Respond with ONLY a JSON object, no prose, no markdown, in exactly this shape:
-{"title": "<a short, imperative instructional title, e.g. 'Click the Start Streaming button'>", "description": "<one or two clear, professional sentences describing what the user should do and why, written for a tutorial reader who has never used this software>"}`;
+{"title": "<a short, imperative title naming the specific element visible in the circle, formatted as: Click the '<exact visible label>' <element type>>", "description": "<one or two clear, professional sentences describing what the user should do and why, written for a tutorial reader who has never used this software, referencing only what is actually visible>"}`;
 
   const api = client();
   let res;

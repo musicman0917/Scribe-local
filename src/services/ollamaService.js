@@ -70,13 +70,18 @@ Respond with ONLY a JSON object, no prose, no markdown, in exactly this shape:
 where (x0,y0) is the top-left and (x1,y1) is the bottom-right of a tight bounding box around that UI element, with a little padding. All four values must be between 0 and 1.`;
 
   const api = client();
-  const res = await api.post('/api/generate', {
-    model: model || ollama.visionModel,
-    prompt,
-    images: [imageBase64],
-    stream: false,
-    options: { temperature: 0.1 }
-  });
+  let res;
+  try {
+    res = await api.post('/api/generate', {
+      model: model || ollama.visionModel,
+      prompt,
+      images: [imageBase64],
+      stream: false,
+      options: { temperature: 0.1 }
+    });
+  } catch (err) {
+    throw new Error(describeError(err));
+  }
 
   const parsed = extractJson(res.data.response);
   if (
@@ -107,13 +112,18 @@ Respond with ONLY a JSON object, no prose, no markdown, in exactly this shape:
 {"title": "<a short, imperative instructional title, e.g. 'Click the Start Streaming button'>", "description": "<one or two clear, professional sentences describing what the user should do and why, written for a tutorial reader who has never used this software>"}`;
 
   const api = client();
-  const res = await api.post('/api/generate', {
-    model: model || ollama.visionModel,
-    prompt,
-    images: [imageBase64],
-    stream: false,
-    options: { temperature: 0.4 }
-  });
+  let res;
+  try {
+    res = await api.post('/api/generate', {
+      model: model || ollama.visionModel,
+      prompt,
+      images: [imageBase64],
+      stream: false,
+      options: { temperature: 0.4 }
+    });
+  } catch (err) {
+    throw new Error(describeError(err));
+  }
 
   const parsed = extractJson(res.data.response);
   if (!parsed || !parsed.title) {

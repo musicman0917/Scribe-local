@@ -85,13 +85,21 @@ class CaptureSession extends EventEmitter {
     }
 
     this.clickHandler = (e) => {
-      // uiohook button 1 = left click
+      // uiohook button 1 = left click. Captured on mousedown, not mouseup:
+      // screenshot-desktop shells out to a separate process to grab the
+      // screen, which takes real time (often a few hundred ms on
+      // Windows). Capturing on mouseup — after the click has already been
+      // dispatched to the target app — risks the screenshot landing after
+      // whatever UI change the click triggered (a dialog closing, a view
+      // navigating, a button's state updating), especially for buttons
+      // whose entire purpose is to cause an immediate transition. Mousedown
+      // captures the screen as it looked the instant the click began.
       if (e.button === 1) {
         this.captureClickStep(e.x, e.y);
       }
     };
 
-    uIOhook.on('mouseup', this.clickHandler);
+    uIOhook.on('mousedown', this.clickHandler);
     try {
       uIOhook.start();
     } catch (err) {
@@ -102,7 +110,7 @@ class CaptureSession extends EventEmitter {
   stop() {
     this.active = false;
     if (hookAvailable && this.clickHandler) {
-      uIOhook.off('mouseup', this.clickHandler);
+      uIOhook.off('mousedown', this.clickHandler);
       try {
         uIOhook.stop();
       } catch {

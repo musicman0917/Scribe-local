@@ -2,6 +2,7 @@ const express = require('express');
 const path = require('path');
 const captureService = require('../services/captureService');
 const imageService = require('../services/imageService');
+const accessibilityService = require('../services/accessibilityService');
 const store = require('../services/store');
 const { getSettings } = require('../config');
 
@@ -9,25 +10,33 @@ module.exports = function createCaptureRouter(io) {
   const router = express.Router();
 
   async function finalizeStep(tutorialId, { x, y, filename, filePath, order }) {
-    const { width, height } = await imageService.annotateClick({
-      inputPath: filePath,
-      outputPath: filePath.replace('raw-', 'annotated-'),
-      x,
-      y,
-      order,
-      style: getSettings().capture
-    });
+    const settings = getSettings();
+
+    const [{ width, height }, elementInfo] = await Promise.all([
+      imageService.annotateClick({
+        inputPath: filePath,
+        outputPath: filePath.replace('raw-', 'annotated-'),
+        x,
+        y,
+        order,
+        style: settings.capture
+      }),
+      settings.accessibility.enabled
+        ? accessibilityService.describeElementAtPoint(x, y)
+        : Promise.resolve(null)
+    ]);
 
     const annotatedFilename = path.basename(filePath.replace('raw-', 'annotated-'));
 
     const step = await store.addStep(tutorialId, {
-      title: `Step ${order}`,
+      title: accessibilityService.buildDefaultTitle(order, elementInfo),
       x,
       y,
       screenWidth: width,
       screenHeight: height,
       rawImage: filePath,
-      annotatedImage: filePath.replace('raw-', 'annotated-')
+      annotatedImage: filePath.replace('raw-', 'annotated-'),
+      element: elementInfo
     });
 
     const payload = {
@@ -43,7 +52,10 @@ module.exports = function createCaptureRouter(io) {
   router.get('/status', (req, res) => {
     res.json({
       hookAvailable: captureService.isHookAvailable(),
-      hookLoadError: captureService.hookLoadError()
+      hookLoadError: captureService.hookLoadError(),
+      accessibilityAvailable: accessibilityService.isAvailable(),
+      accessibilityEnabled: getSettings().accessibility.enabled,
+      platform: process.platform
     });
   });
 

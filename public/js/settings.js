@@ -7,6 +7,8 @@
     highlightStroke: document.getElementById('highlight-stroke'),
     badgeColor: document.getElementById('badge-color'),
     badgeTextColor: document.getElementById('badge-text-color'),
+    accessibilityEnabled: document.getElementById('accessibility-enabled'),
+    accessibilityPlatformNote: document.getElementById('accessibility-platform-note'),
     testBtn: document.getElementById('test-btn'),
     saveBtn: document.getElementById('save-btn'),
     statusMsg: document.getElementById('status-msg'),
@@ -22,6 +24,15 @@
     els.highlightStroke.value = settings.capture.highlightStroke;
     els.badgeColor.value = settings.capture.badgeColor;
     els.badgeTextColor.value = settings.capture.badgeTextColor;
+    els.accessibilityEnabled.checked = settings.accessibility.enabled;
+
+    const status = await Api.captureStatus();
+    if (!status.accessibilityAvailable) {
+      els.accessibilityEnabled.disabled = true;
+      els.accessibilityPlatformNote.textContent = `Not available on this server's OS (${status.platform}) yet — this only works on Windows for now.`;
+    } else {
+      els.accessibilityPlatformNote.textContent = 'Supported on this server (Windows UI Automation).';
+    }
   }
 
   els.testBtn.addEventListener('click', async () => {
@@ -64,6 +75,9 @@
           highlightStroke: els.highlightStroke.value,
           badgeColor: els.badgeColor.value,
           badgeTextColor: els.badgeTextColor.value
+        },
+        accessibility: {
+          enabled: els.accessibilityEnabled.checked
         }
       });
       els.statusMsg.textContent = '✓ Saved';

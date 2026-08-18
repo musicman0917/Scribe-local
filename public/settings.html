@@ -76,6 +76,22 @@
       </div>
     </div>
 
+    <div class="card p-6">
+      <h2 class="text-lg font-semibold mb-1">Automatic Step Titles</h2>
+      <p class="text-sm text-gray-500 mb-4">
+        When available, Scribe Local asks the OS which UI element you clicked and titles the step
+        <code class="bg-gray-100 px-1 rounded">Click "Save"</code> automatically, instead of a generic
+        <code class="bg-gray-100 px-1 rounded">Step 3</code>. Currently only supported on
+        <strong>Windows</strong> (via .NET UI Automation, no extra install needed). On other platforms,
+        or when disabled, steps get generic titles — you can still rename them by hand or use Auto-Describe.
+      </p>
+      <div class="flex items-center gap-2">
+        <input id="accessibility-enabled" type="checkbox" class="h-4 w-4 accent-brand-500" />
+        <label for="accessibility-enabled" class="text-sm text-gray-700">Auto-detect clicked element for step titles</label>
+      </div>
+      <p id="accessibility-platform-note" class="text-xs text-gray-400 mt-2"></p>
+    </div>
+
     <div class="rounded-xl border border-amber-300 bg-amber-50 p-5 text-sm text-amber-900">
       <p class="font-semibold mb-1">⚠ Security &amp; Compliance Notice</p>
       <p>This tool captures raw screenshots of your desktop and sends cropped images to your local Ollama instance. It is <strong>not</strong> designed, audited, or certified for capturing financial data, Protected Health Information (PHI), or any HIPAA-regulated data. Always review captured screenshots before exporting or sharing, and use the redaction tool to blur or black out any sensitive information such as stream keys, passwords, tokens, or personal data.</p>

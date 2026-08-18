@@ -10,5 +10,8 @@
     "highlightStroke": "rgba(255, 179, 0, 0.9)",
     "badgeColor": "#111827",
     "badgeTextColor": "#ffffff"
+  },
+  "accessibility": {
+    "enabled": true
   }
 }

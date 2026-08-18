@@ -17,6 +17,9 @@ const DEFAULTS = {
     highlightStroke: 'rgba(255, 179, 0, 0.9)',
     badgeColor: '#111827',
     badgeTextColor: '#ffffff'
+  },
+  accessibility: {
+    enabled: true
   }
 };
 
@@ -37,7 +40,8 @@ function getSettings() {
   const raw = JSON.parse(fs.readFileSync(SETTINGS_PATH, 'utf-8'));
   return {
     ollama: { ...DEFAULTS.ollama, ...(raw.ollama || {}) },
-    capture: { ...DEFAULTS.capture, ...(raw.capture || {}) }
+    capture: { ...DEFAULTS.capture, ...(raw.capture || {}) },
+    accessibility: { ...DEFAULTS.accessibility, ...(raw.accessibility || {}) }
   };
 }
 
@@ -45,7 +49,8 @@ function saveSettings(partial) {
   const current = getSettings();
   const next = {
     ollama: { ...current.ollama, ...(partial.ollama || {}) },
-    capture: { ...current.capture, ...(partial.capture || {}) }
+    capture: { ...current.capture, ...(partial.capture || {}) },
+    accessibility: { ...current.accessibility, ...(partial.accessibility || {}) }
   };
   fs.writeFileSync(SETTINGS_PATH, JSON.stringify(next, null, 2));
   return next;

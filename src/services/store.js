@@ -105,6 +105,7 @@ async function addStep(tutorialId, step) {
     rawImage: step.rawImage,
     annotatedImage: step.annotatedImage,
     croppedImage: step.croppedImage || null,
+    element: step.element || null,
     redactions: [],
     createdAt: new Date().toISOString()
   };

@@ -72,13 +72,20 @@
   // ---------- capture status / controls ----------
   async function refreshHookStatus() {
     const status = await Api.captureStatus();
+    let message;
     if (status.hookAvailable) {
-      els.hookStatus.textContent = 'Global click capture available — Start Capturing will auto-record every click.';
+      message = 'Global click capture available — Start Capturing will auto-record every click.';
       els.hookStatus.className = 'text-xs rounded-lg px-3 py-2 mb-3 border border-green-200 bg-green-50 text-green-700';
     } else {
-      els.hookStatus.textContent = 'Global click capture unavailable on this system. Use Manual Capture below.';
+      message = 'Global click capture unavailable on this system. Use Manual Capture below.';
       els.hookStatus.className = 'text-xs rounded-lg px-3 py-2 mb-3 border border-amber-200 bg-amber-50 text-amber-700';
     }
+    if (status.accessibilityAvailable && status.accessibilityEnabled) {
+      message += ' Step titles will auto-fill with the clicked element’s name.';
+    } else if (!status.accessibilityAvailable) {
+      message += ` Auto-named step titles aren't supported on ${status.platform} yet — steps will use generic titles unless you edit them or use Auto-Describe.`;
+    }
+    els.hookStatus.textContent = message;
     return status;
   }
 

@@ -23,6 +23,7 @@ Scribe Local is a local productivity tool, not a compliance-audited system. Spec
 
 - **Local capture engine** — a global click listener (via `uiohook-napi`) records every left-click's absolute screen coordinates and triggers a full-screen screenshot (`screenshot-desktop`), so you just click through your workflow and the tutorial builds itself. A **manual capture fallback** ("Capture Step Now") is included for systems where global hooking isn't available (e.g. Wayland on Linux, or missing accessibility permissions on macOS) — it takes an instant screenshot and lets you click on it to place the marker.
 - **Automatic click annotation** — every screenshot is stamped with a semi-transparent yellow target circle centered exactly on the click, plus a solid numbered badge (1, 2, 3…) showing workflow order, using `sharp` for fast server-side image compositing.
+- **Automatic step titles (Windows)** — on Windows, each captured click is looked up against the OS's UI Automation tree, so steps are titled `Click "Save"` instead of a generic `Step 3`, with zero extra setup. Not yet implemented on macOS/Linux (falls back to a generic title there); toggle it off in Settings if you'd rather title steps manually or via Auto-Describe.
 - **Local Ollama integration** —
   - **Smart Crop**: sends the annotated screenshot + click coordinates to a vision model (e.g. `llava`, `llama3.2-vision`) running in your local Ollama, asking it to return a tight bounding box around the clicked UI element, then crops to it automatically (falling back to a fixed-size crop around the click point if the model's response can't be parsed).
   - **Auto-Describe**: sends the cropped/annotated step image back to Ollama to generate a professional, instructional title and description for that step.
@@ -139,6 +140,19 @@ Settings are persisted to `config/settings.json` (git-ignored; seeded from `conf
 | Export | `archiver` (Markdown+images zip), `pdfkit` (PDF) |
 | Frontend | Vanilla JS, Tailwind CSS |
 | Storage | Flat-file JSON manifests + PNGs under `data/tutorials/` (no database) |
+
+## Automatic step titles on Windows
+
+When a step is captured on Windows, Scribe Local spawns a small bundled PowerShell script
+(`scripts/win-element-at-point.ps1`) that uses .NET's UI Automation client (`AutomationElement.FromPoint`)
+to identify the named control under the click — no extra install required, it ships with Windows. The
+resulting title looks like `Click "Start Streaming"` instead of a generic `Step 4`.
+
+A few things to know:
+- This adds a small amount of latency per click (a PowerShell process spin-up, typically well under a second) — it's applied after the screenshot, so it doesn't slow down the capture itself.
+- If the app you're clicking in is **running elevated (as Administrator)** and Scribe Local/PM2 isn't, UI Automation generally can't inspect its elements, and titles will fall back to generic. Run the server elevated too if you need this for an elevated app.
+- You can disable it in **Settings → Automatic Step Titles** if you'd rather title steps manually or exclusively via Auto-Describe.
+- Not implemented yet on macOS (Accessibility API) or Linux (AT-SPI2) — contributions welcome.
 
 ## Troubleshooting
 

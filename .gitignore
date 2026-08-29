@@ -6,3 +6,7 @@ config/settings.json
 .DS_Store
 .env
 exports/
+installer/.build/
+installer/*.exe
+installer/*.zip
+installer/node-v*-win-x64/

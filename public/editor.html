@@ -71,9 +71,12 @@
   <!-- Manual capture modal -->
   <dialog id="manual-capture-dialog" class="rounded-xl p-0 max-w-4xl w-full backdrop:bg-gray-900/50">
     <div class="card p-4 w-full">
-      <div class="flex items-center justify-between mb-3">
+      <div class="flex items-center justify-between mb-3 gap-3">
         <h2 class="text-lg font-semibold">Click the exact spot for this step</h2>
-        <button id="manual-capture-close" class="btn-ghost !px-2">✕</button>
+        <div class="flex items-center gap-2">
+          <select id="manual-capture-screen" class="hidden input !w-auto !py-1 text-sm"></select>
+          <button id="manual-capture-close" class="btn-ghost !px-2">✕</button>
+        </div>
       </div>
       <div id="manual-capture-imgwrap" class="relative border border-gray-200 rounded-lg overflow-hidden bg-gray-100 cursor-crosshair">
         <img id="manual-capture-img" class="w-full h-auto select-none" draggable="false" />

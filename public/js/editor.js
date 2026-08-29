@@ -110,23 +110,50 @@
   const mcImg = document.getElementById('manual-capture-img');
   const mcMarker = document.getElementById('manual-capture-marker');
   const mcConfirm = document.getElementById('manual-capture-confirm');
-  let mcState = null; // { filename, x, y }
+  const mcScreenSelect = document.getElementById('manual-capture-screen');
+  let mcState = null; // { filename, x, y, displayX, displayY }
+
+  async function takeManualShot(screenId) {
+    const { filename, imageUrl, displayX, displayY } = await Api.manualShot(tutorialId, screenId);
+    mcState = { filename, x: null, y: null, displayX, displayY };
+    mcImg.src = `${imageUrl}?t=${Date.now()}`;
+    mcMarker.classList.add('hidden');
+    mcConfirm.disabled = true;
+  }
 
   els.manualCaptureBtn.addEventListener('click', async () => {
     els.manualCaptureBtn.disabled = true;
     els.manualCaptureBtn.textContent = 'Capturing…';
     try {
-      const { filename, imageUrl } = await Api.manualShot(tutorialId);
-      mcState = { filename, x: null, y: null };
-      mcImg.src = `${imageUrl}?t=${Date.now()}`;
-      mcMarker.classList.add('hidden');
-      mcConfirm.disabled = true;
+      const { displays } = await Api.listDisplays();
+      mcScreenSelect.innerHTML = '';
+      if (displays.length > 1) {
+        displays.forEach((d, idx) => {
+          const opt = document.createElement('option');
+          opt.value = d.id;
+          opt.textContent = `${d.name || `Screen ${idx + 1}`} (${d.width}×${d.height})`;
+          mcScreenSelect.appendChild(opt);
+        });
+        mcScreenSelect.classList.remove('hidden');
+      } else {
+        mcScreenSelect.classList.add('hidden');
+      }
+
+      await takeManualShot(displays.length > 1 ? mcScreenSelect.value : undefined);
       mcDialog.showModal();
     } catch (err) {
       alert(err.message);
     } finally {
       els.manualCaptureBtn.disabled = false;
       els.manualCaptureBtn.textContent = 'Capture Step Now (Manual)';
+    }
+  });
+
+  mcScreenSelect.addEventListener('change', async () => {
+    try {
+      await takeManualShot(mcScreenSelect.value);
+    } catch (err) {
+      alert(err.message);
     }
   });
 

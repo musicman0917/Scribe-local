@@ -37,9 +37,11 @@ const Api = (() => {
 
     // Capture
     captureStatus: () => request('GET', '/api/capture/status'),
+    listDisplays: () => request('GET', '/api/capture/displays'),
     startCapture: (tutorialId) => request('POST', `/api/capture/${tutorialId}/start`),
     stopCapture: (tutorialId) => request('POST', `/api/capture/${tutorialId}/stop`),
-    manualShot: (tutorialId) => request('POST', `/api/capture/${tutorialId}/manual-shot`),
+    manualShot: (tutorialId, screen) =>
+      request('POST', `/api/capture/${tutorialId}/manual-shot`, { screen }),
     manualStep: (tutorialId, payload) =>
       request('POST', `/api/capture/${tutorialId}/manual-step`, payload),
 

@@ -1,7 +1,7 @@
 {
   "_comment": "Not a standalone package.json — electron/build.sh merges this with the root package.json's `dependencies` at build time, so runtime dependency versions stay in sync with the plain Node/NSIS build automatically rather than being duplicated by hand. Deliberately has no devDependencies (electron/electron-builder) — those are installed separately in electron/.tooling/ so they never end up in this project's node_modules, which gets shipped verbatim (see build.sh for why).",
   "name": "scribe-local-desktop",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Scribe Local — self-hosted tutorial builder (desktop app)",
   "author": "Scribe Local",
   "private": true,

@@ -19,6 +19,7 @@ const path = require('path');
 const fs = require('fs');
 const screenshot = require('screenshot-desktop');
 const { v4: uuidv4 } = require('uuid');
+const displayService = require('./displayService');
 
 let uIOhook = null;
 let UiohookKey = null;
@@ -47,11 +48,13 @@ class CaptureSession extends EventEmitter {
     return hookAvailable;
   }
 
-  async takeScreenshot() {
+  async takeScreenshot(screenId) {
     const filename = `raw-${Date.now()}-${uuidv4().slice(0, 8)}.png`;
     const filePath = path.join(this.imagesDir, filename);
     await fs.promises.mkdir(this.imagesDir, { recursive: true });
-    const imgBuffer = await screenshot({ format: 'png' });
+    const opts = { format: 'png' };
+    if (screenId !== undefined) opts.screen = screenId;
+    const imgBuffer = await screenshot(opts);
     await fs.promises.writeFile(filePath, imgBuffer);
     return { filename, filePath };
   }
@@ -60,10 +63,19 @@ class CaptureSession extends EventEmitter {
     if (this.busy) return null; // debounce overlapping clicks
     this.busy = true;
     try {
-      const { filename, filePath } = await this.takeScreenshot();
+      // Route to whichever monitor the click actually happened on, and
+      // translate the absolute click point into that monitor's own local
+      // pixel space — annotation/cropping downstream all assume (x, y) are
+      // local to the captured image, not the whole virtual desktop.
+      const displays = await displayService.listDisplays();
+      const display = displayService.findDisplayForPoint(displays, x, y);
+      const { filename, filePath } = await this.takeScreenshot(display ? display.id : undefined);
       this.stepCount += 1;
+      const localX = display ? x - display.x : x;
+      const localY = display ? y - display.y : y;
       const event = {
-        x, y, filename, filePath, order: this.stepCount, tutorialId: this.tutorialId
+        x: localX, y: localY, globalX: x, globalY: y,
+        filename, filePath, order: this.stepCount, tutorialId: this.tutorialId
       };
       this.emit('step-captured', event);
       return event;
@@ -150,11 +162,13 @@ function stopAllSessions() {
   }
 }
 
-async function manualCapture(imagesDir) {
+async function manualCapture(imagesDir, screenId) {
   await fs.promises.mkdir(imagesDir, { recursive: true });
   const filename = `raw-${Date.now()}-${uuidv4().slice(0, 8)}.png`;
   const filePath = path.join(imagesDir, filename);
-  const imgBuffer = await screenshot({ format: 'png' });
+  const opts = { format: 'png' };
+  if (screenId !== undefined) opts.screen = screenId;
+  const imgBuffer = await screenshot(opts);
   await fs.promises.writeFile(filePath, imgBuffer);
   return { filename, filePath };
 }
@@ -165,6 +179,7 @@ module.exports = {
   stopSession,
   stopAllSessions,
   manualCapture,
+  listDisplays: displayService.listDisplays,
   isHookAvailable: () => hookAvailable,
   hookLoadError: () => hookLoadError
 };

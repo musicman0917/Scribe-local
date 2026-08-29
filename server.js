@@ -60,3 +60,14 @@ function shutdown() {
 }
 process.on('SIGINT', shutdown);
 process.on('SIGTERM', shutdown);
+
+// A rejected promise anywhere in the capture pipeline (screenshot-desktop,
+// uiohook, an Ollama call, ...) must not take down the whole app — that
+// would silently kill capture (and, in the Electron desktop build, the
+// entire tray-resident process) for the rest of the session. Node treats
+// an unhandled rejection as fatal by default; log it and keep running
+// instead, the same way the Express error handler above already does for
+// request-scoped failures.
+process.on('unhandledRejection', (err) => {
+  console.error('Unhandled promise rejection (continuing):', err);
+});

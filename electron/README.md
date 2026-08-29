@@ -40,9 +40,11 @@ cd electron
 ./build.sh
 ```
 
-Produces `electron/.build/stage/electron-dist/ScribeLocal-Desktop-Setup-<version>.exe`. The whole
-`electron/.build/` staging directory and any built `.exe` are git-ignored — only the build source
-(`main.js`, `build.sh`, `package.json`, icons) is committed.
+Produces `/tmp/scribe-local-electron-build/stage/electron-dist/ScribeLocal-Desktop-Setup-<version>.exe`
+(override the location with `./build.sh <dir>`). The staging directory is deliberately **outside**
+the repo tree — see "Two real bugs" below for why. `electron/.tooling/` (electron + electron-builder
+themselves, installed once and reused across builds) and any built `.exe` are git-ignored; only the
+build source (`main.js`, `build.sh`, `package.json`, icons) is committed.
 
 ## How it works
 
@@ -66,6 +68,30 @@ Produces `electron/.build/stage/electron-dist/ScribeLocal-Desktop-Setup-<version
   `package.json`'s `dependencies` at build time, so runtime dependency versions can't drift out of
   sync with the plain Node build.
 
+## Two real bugs hit while building this, and the fixes
+
+1. **electron-builder's default `files: ["node_modules/**/*"]` handling silently dropped a
+   legitimately-needed transitive dependency** (`call-bind-apply-helpers`, several hops deep under
+   `express`), crashing the app on startup with `Cannot find module 'call-bind-apply-helpers'` —
+   even though it was correctly present in the staged `npm install` output. electron-builder does
+   its own dependency-graph-based pruning rather than a literal copy, and it has known gaps. Fixed
+   by giving it a `{from: "node_modules", to: "node_modules", filter: ["**/*"]}` object-form entry
+   in `files` instead of a plain glob string — this makes it copy `node_modules` literally.
+   **This means build tooling (electron, electron-builder) must never be physically present in the
+   staged project's `node_modules`**, or it ships too (confirmed: it did, ballooning the installer
+   from ~95MB to ~245MB) — hence installing them in the separate `electron/.tooling/` directory and
+   invoking electron-builder's binary from there against the staged project.
+2. **Node's module resolution walks up parent directories looking for `node_modules`.** Staging
+   inside the repo (`electron/.build/`, nested under the repo root) meant electron-builder could see
+   — and pull in — the *repo root's own* `node_modules`, which has host-platform (Linux, in this
+   project's case) native binaries from ordinary `npm install`/`npm start` dev use. Confirmed: Linux
+   `sharp` binaries ended up bundled in a Windows-only installer. Fixed by staging **outside** the
+   repo tree entirely (`/tmp/...` by default) so there's no parent `node_modules` to find.
+
+Both were caught here — not by running the installer, which this build environment can't do — by
+extracting the actual NSIS payload (`7z x` on the embedded `app-64.7z`, not just listing the NSIS
+wrapper) and directly checking which files it contains, before and after each fix.
+
 ## Known limitations
 
 - **Unsigned.** No code-signing certificate, so Windows SmartScreen will flag it on first run
@@ -76,3 +102,10 @@ Produces `electron/.build/stage/electron-dist/ScribeLocal-Desktop-Setup-<version
   Windows-native binaries, but the actual install → launch → capture flow needs a real run on
   Windows to fully confirm.
 - Windows x64 only (not ARM64).
+- **Install location affects `screenshot-desktop`.** `nsis.perMachine` is set to `false` (per-user
+  install, no admin needed, defaults to `%LOCALAPPDATA%\Programs\`) — but the installer wizard lets
+  the user override this, and choosing an "all users" / Program Files install means
+  `screenshot-desktop`'s Windows backend (which compiles a small C# helper into its own
+  `node_modules` folder the first time it's used) needs write access there, which normally requires
+  running elevated. If capture fails specifically on a Program-Files install, that's the likely
+  cause — either reinstall to the default per-user location, or run the app as Administrator.

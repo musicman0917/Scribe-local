@@ -7,4 +7,5 @@ config/settings.json
 .env
 exports/
 electron/.build/
+electron/.tooling/
 electron/*.exe

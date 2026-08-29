@@ -1,18 +1,15 @@
 {
-  "_comment": "Not a standalone package.json — electron/build.sh merges this with the root package.json's `dependencies` at build time, so runtime dependency versions stay in sync with the plain Node/NSIS build automatically rather than being duplicated by hand.",
+  "_comment": "Not a standalone package.json — electron/build.sh merges this with the root package.json's `dependencies` at build time, so runtime dependency versions stay in sync with the plain Node/NSIS build automatically rather than being duplicated by hand. Deliberately has no devDependencies (electron/electron-builder) — those are installed separately in electron/.tooling/ so they never end up in this project's node_modules, which gets shipped verbatim (see build.sh for why).",
   "name": "scribe-local-desktop",
   "version": "1.0.0",
   "description": "Scribe Local — self-hosted tutorial builder (desktop app)",
   "author": "Scribe Local",
   "private": true,
   "main": "electron/main.js",
-  "devDependencies": {
-    "electron": "^33.0.0",
-    "electron-builder": "^25.1.8"
-  },
   "build": {
     "appId": "com.scribelocal.desktop",
     "productName": "Scribe Local",
+    "electronVersion": "33.4.11",
     "asar": false,
     "npmRebuild": false,
     "publish": null,
@@ -23,11 +20,12 @@
       "scripts/**/*",
       "config/settings.example.json",
       "electron/**/*",
-      "node_modules/**/*",
       "package.json",
-      "!node_modules/@img/sharp-{linux,linuxmusl,darwin}*/**",
-      "!node_modules/@img/sharp-libvips-{linux,linuxmusl,darwin}*/**",
-      "!node_modules/uiohook-napi/prebuilds/{linux,darwin}*/**"
+      {
+        "from": "node_modules",
+        "to": "node_modules",
+        "filter": ["**/*"]
+      }
     ],
     "win": {
       "target": ["nsis"],

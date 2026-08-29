@@ -1,8 +1,0 @@
-{
-  "name": "scribe-local-service-installer",
-  "private": true,
-  "description": "Registers/unregisters Scribe Local as a Windows Service. Not part of the app itself — only used by the installer.",
-  "dependencies": {
-    "node-windows": "1.0.0-beta.8"
-  }
-}

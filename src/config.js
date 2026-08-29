@@ -1,9 +1,14 @@
 const fs = require('fs');
 const path = require('path');
 
-const CONFIG_DIR = path.join(__dirname, '..', 'config');
+// The bundled config dir (ships settings.example.json) is read-only in a
+// packaged Electron build. settings.json itself is written, so its
+// location is overridable — the Electron desktop build points it at
+// Electron's per-user app-data folder instead.
+const APP_CONFIG_DIR = path.join(__dirname, '..', 'config');
+const CONFIG_DIR = process.env.SCRIBE_CONFIG_DIR || APP_CONFIG_DIR;
 const SETTINGS_PATH = path.join(CONFIG_DIR, 'settings.json');
-const EXAMPLE_PATH = path.join(CONFIG_DIR, 'settings.example.json');
+const EXAMPLE_PATH = path.join(APP_CONFIG_DIR, 'settings.example.json');
 
 const DEFAULTS = {
   ollama: {

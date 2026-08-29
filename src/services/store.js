@@ -8,7 +8,13 @@ const fsp = fs.promises;
 const path = require('path');
 const { v4: uuidv4 } = require('uuid');
 
-const DATA_DIR = path.join(__dirname, '..', '..', 'data', 'tutorials');
+// Overridable so the Electron desktop build can redirect storage to
+// Electron's per-user app-data folder (app.getPath('userData')) — the
+// app's own install directory may be read-only (packed into an asar
+// archive) or not writable without elevation.
+const DATA_DIR = process.env.SCRIBE_DATA_DIR
+  ? path.join(process.env.SCRIBE_DATA_DIR, 'tutorials')
+  : path.join(__dirname, '..', '..', 'data', 'tutorials');
 
 function ensureDataDir() {
   if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });

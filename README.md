@@ -110,6 +110,17 @@ You can change the port with the `PORT` environment variable:
 PORT=4000 npm start
 ```
 
+### Windows: prefer the desktop app
+
+On Windows, running Scribe Local as a background service (PM2, `nssm`, or similar) doesn't work
+for this app — screen capture and the global click hook both need access to the real interactive
+desktop, which a Windows Service is deliberately isolated from (it runs in "Session 0" and only
+ever sees a blank screen). Use the desktop app instead: see [`electron/README.md`](electron/README.md)
+to build `ScribeLocal-Desktop-Setup-<version>.exe`, a normal Windows app with a system tray icon
+that auto-starts at login and runs in your real login session, where capture actually works.
+
+`npm start` still works fine on Windows for local development — just don't wrap it in a service.
+
 ## Using Scribe Local
 
 1. **Create a tutorial** from the dashboard (e.g. "How to Start Streaming in OBS Studio").
@@ -150,7 +161,7 @@ resulting title looks like `Click "Start Streaming"` instead of a generic `Step 
 
 A few things to know:
 - This adds a small amount of latency per click (a PowerShell process spin-up, typically well under a second) — it's applied after the screenshot, so it doesn't slow down the capture itself.
-- If the app you're clicking in is **running elevated (as Administrator)** and Scribe Local/PM2 isn't, UI Automation generally can't inspect its elements, and titles will fall back to generic. Run the server elevated too if you need this for an elevated app.
+- If the app you're clicking in is **running elevated (as Administrator)** and Scribe Local isn't, UI Automation generally can't inspect its elements, and titles will fall back to generic. Run Scribe Local elevated too if you need this for an elevated app.
 - You can disable it in **Settings → Automatic Step Titles** if you'd rather title steps manually or exclusively via Auto-Describe.
 - Not implemented yet on macOS (Accessibility API) or Linux (AT-SPI2) — contributions welcome.
 

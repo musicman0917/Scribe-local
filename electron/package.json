@@ -1,0 +1,46 @@
+{
+  "_comment": "Not a standalone package.json — electron/build.sh merges this with the root package.json's `dependencies` at build time, so runtime dependency versions stay in sync with the plain Node/NSIS build automatically rather than being duplicated by hand.",
+  "name": "scribe-local-desktop",
+  "version": "1.0.0",
+  "description": "Scribe Local — self-hosted tutorial builder (desktop app)",
+  "author": "Scribe Local",
+  "private": true,
+  "main": "electron/main.js",
+  "devDependencies": {
+    "electron": "^33.0.0",
+    "electron-builder": "^25.1.8"
+  },
+  "build": {
+    "appId": "com.scribelocal.desktop",
+    "productName": "Scribe Local",
+    "asar": false,
+    "npmRebuild": false,
+    "publish": null,
+    "files": [
+      "server.js",
+      "src/**/*",
+      "public/**/*",
+      "scripts/**/*",
+      "config/settings.example.json",
+      "electron/**/*",
+      "node_modules/**/*",
+      "package.json",
+      "!node_modules/@img/sharp-{linux,linuxmusl,darwin}*/**",
+      "!node_modules/@img/sharp-libvips-{linux,linuxmusl,darwin}*/**",
+      "!node_modules/uiohook-napi/prebuilds/{linux,darwin}*/**"
+    ],
+    "win": {
+      "target": ["nsis"],
+      "icon": "electron/icon.png"
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "artifactName": "ScribeLocal-Desktop-Setup-${version}.exe"
+    },
+    "directories": {
+      "output": "electron-dist"
+    }
+  }
+}

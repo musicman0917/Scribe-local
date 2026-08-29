@@ -13,7 +13,18 @@
 const { execFile } = require('child_process');
 const path = require('path');
 
-const SCRIPT_PATH = path.join(__dirname, '..', '..', 'scripts', 'win-element-at-point.ps1');
+// In a packaged Electron build this file runs from inside an asar archive,
+// but powershell.exe is an external process that can't read into one — it
+// needs a real path. electron-builder is configured to keep scripts/ out
+// of the archive (asarUnpack), physically placing it under
+// .../app.asar.unpacked/scripts/ instead; this rewrites the computed path
+// to match. A harmless no-op everywhere else (plain `npm start`, the old
+// NSIS/service build), since 'app.asar' never appears in those paths.
+function unpackedPath(p) {
+  return p.replace('app.asar', 'app.asar.unpacked');
+}
+
+const SCRIPT_PATH = unpackedPath(path.join(__dirname, '..', '..', 'scripts', 'win-element-at-point.ps1'));
 const TIMEOUT_MS = 4000;
 
 function isAvailable() {
